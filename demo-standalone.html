@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Basketball League - Demo Standalone</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.1em; opacity: 0.95; }
+        .section { padding: 30px; border-bottom: 1px solid #eee; }
+        .section:last-child { border-bottom: none; }
+        h2 { color: #667eea; margin-bottom: 20px; font-size: 1.8em; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        thead { background: #667eea; color: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        tbody tr:hover { background: #f8f9fa; }
+        .match-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .winner { color: #28a745; font-weight: bold; }
+        .team-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .team-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .player-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .player-item {
+            background: white;
+            padding: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏀 Fantasy Basketball League</h1>
+            <p class="subtitle">Demo Standalone - Tutto client-side!</p>
+        </header>
+
+        <div class="section">
+            <h2>Controlli</h2>
+            <button class="btn btn-primary" onclick="createLeague()">Crea Nuova Lega (8 squadre)</button>
+            <button class="btn btn-success" onclick="simulateSeason()">Simula Stagione Completa</button>
+        </div>
+
+        <div class="section">
+            <h2>Classifica</h2>
+            <div id="standings"></div>
+        </div>
+
+        <div class="section">
+            <h2>Squadre</h2>
+            <div id="teams"></div>
+        </div>
+
+        <div class="section">
+            <h2>Ultime Partite</h2>
+            <div id="matches"></div>
+        </div>
+    </div>
+
+    <script>
+        // Generatore di ID
+        const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Utility functions
+        const randomInRange = (min, max) => Math.random() * (max - min) + min;
+        const randomInt = (min, max) => Math.floor(randomInRange(min, max + 1));
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const normalDistribution = (mean, stdDev) => {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            return z0 * stdDev + mean;
+        };
+
+        // Dati
+        const firstNames = ['LeBron', 'Stephen', 'Kevin', 'Giannis', 'Luka', 'Jayson', 'Joel', 'Nikola', 'Damian', 'Anthony', 'James', 'Kawhi', 'Paul', 'Chris', 'Klay', 'Jimmy', 'Kyrie', 'Russell', 'Bradley', 'Devin'];
+        const lastNames = ['James', 'Curry', 'Durant', 'Antetokounmpo', 'Dončić', 'Tatum', 'Embiid', 'Jokić', 'Lillard', 'Davis', 'Harden', 'Leonard', 'George', 'Paul', 'Thompson', 'Butler', 'Irving', 'Westbrook', 'Beal', 'Booker'];
+        const teams = [
+            { city: 'Los Angeles', name: 'Lakers' },
+            { city: 'Boston', name: 'Celtics' },
+            { city: 'Golden State', name: 'Warriors' },
+            { city: 'Miami', name: 'Heat' },
+            { city: 'Chicago', name: 'Bulls' },
+            { city: 'Phoenix', name: 'Suns' },
+            { city: 'Dallas', name: 'Mavericks' },
+            { city: 'Milwaukee', name: 'Bucks' }
+        ];
+
+        let league = { teams: [], matches: [] };
+
+        // Generate player
+        function generatePlayer(position) {
+            const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+            const pos = position || positions[randomInt(0, 4)];
+            const overall = Math.round(clamp(normalDistribution(75, 8), 60, 99));
+            const baseFactor = overall / 80;
+
+            const modifiers = {
+                PG: { points: 0.9, rebounds: 0.5, assists: 1.5 },
+                SG: { points: 1.2, rebounds: 0.6, assists: 0.8 },
+                SF: { points: 1.0, rebounds: 0.8, assists: 0.9 },
+                PF: { points: 0.9, rebounds: 1.2, assists: 0.6 },
+                C: { points: 0.8, rebounds: 1.5, assists: 0.4 }
+            };
+
+            const mod = modifiers[pos];
+
+            return {
+                id: generateId(),
+                name: `${firstNames[randomInt(0, firstNames.length - 1)]} ${lastNames[randomInt(0, lastNames.length - 1)]}`,
+                position: pos,
+                overall: overall,
+                stats: {
+                    points: parseFloat(clamp(normalDistribution(18 * baseFactor * mod.points, 4), 5, 35).toFixed(1)),
+                    rebounds: parseFloat(clamp(normalDistribution(8 * baseFactor * mod.rebounds, 2), 1, 15).toFixed(1)),
+                    assists: parseFloat(clamp(normalDistribution(5 * baseFactor * mod.assists, 2), 1, 12).toFixed(1))
+                }
+            };
+        }
+
+        // Generate team
+        function generateTeam(teamInfo) {
+            const players = [];
+            ['PG', 'SG', 'SF', 'PF', 'C'].forEach(pos => {
+                players.push(generatePlayer(pos), generatePlayer(pos));
+            });
+
+            return {
+                id: generateId(),
+                name: teamInfo.name,
+                city: teamInfo.city,
+                players: players,
+                wins: 0,
+                losses: 0
+            };
+        }
+
+        // Create league
+        function createLeague() {
+            league = { teams: [], matches: [] };
+            teams.forEach(t => league.teams.push(generateTeam(t)));
+            updateDisplay();
+            alert('Lega creata con 8 squadre!');
+        }
+
+        // Simulate match
+        function simulateMatch(home, away) {
+            const homeScore = Math.round(clamp(
+                home.players.reduce((sum, p) => sum + p.stats.points, 0) + normalDistribution(3, 8), 70, 140
+            ));
+            const awayScore = Math.round(clamp(
+                away.players.reduce((sum, p) => sum + p.stats.points, 0) + normalDistribution(0, 8), 70, 140
+            ));
+
+            const match = {
+                id: generateId(),
+                homeTeam: home,
+                awayTeam: away,
+                homeScore: homeScore,
+                awayScore: awayScore,
+                winner: homeScore > awayScore ? home.id : away.id
+            };
+
+            // Update records
+            const homeTeam = league.teams.find(t => t.id === home.id);
+            const awayTeam = league.teams.find(t => t.id === away.id);
+            if (homeScore > awayScore) {
+                homeTeam.wins++;
+                awayTeam.losses++;
+            } else {
+                awayTeam.wins++;
+                homeTeam.losses++;
+            }
+
+            league.matches.push(match);
+            return match;
+        }
+
+        // Simulate season
+        function simulateSeason() {
+            if (league.teams.length === 0) {
+                alert('Crea prima una lega!');
+                return;
+            }
+
+            for (let i = 0; i < league.teams.length; i++) {
+                for (let j = i + 1; j < league.teams.length; j++) {
+                    simulateMatch(league.teams[i], league.teams[j]);
+                }
+            }
+
+            updateDisplay();
+            alert(`Stagione completata! ${league.matches.length} partite giocate.`);
+        }
+
+        // Update display
+        function updateDisplay() {
+            displayStandings();
+            displayTeams();
+            displayMatches();
+        }
+
+        function displayStandings() {
+            const standings = league.teams.map(t => ({
+                ...t,
+                pct: t.wins + t.losses > 0 ? t.wins / (t.wins + t.losses) : 0
+            })).sort((a, b) => b.pct - a.pct || b.wins - a.wins);
+
+            let html = '<table><thead><tr><th>Pos</th><th>Squadra</th><th>V</th><th>S</th><th>%</th></tr></thead><tbody>';
+            standings.forEach((team, i) => {
+                html += `<tr><td>${i + 1}</td><td><strong>${team.city} ${team.name}</strong></td><td>${team.wins}</td><td>${team.losses}</td><td>${(team.pct * 100).toFixed(1)}%</td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('standings').innerHTML = html;
+        }
+
+        function displayTeams() {
+            let html = '';
+            league.teams.forEach(team => {
+                const top5 = team.players.sort((a, b) => b.overall - a.overall).slice(0, 5);
+                html += `<div class="team-card">
+                    <div class="team-name">${team.city} ${team.name} (${team.wins}W - ${team.losses}L)</div>
+                    <strong>Top 5 Giocatori:</strong>
+                    <div class="player-list">`;
+                top5.forEach(p => {
+                    html += `<div class="player-item">
+                        <strong>${p.name}</strong><br>
+                        ${p.position} | OVR: ${p.overall}<br>
+                        ${p.stats.points} PTS | ${p.stats.rebounds} REB | ${p.stats.assists} AST
+                    </div>`;
+                });
+                html += '</div></div>';
+            });
+            document.getElementById('teams').innerHTML = html || '<p>Nessuna squadra. Crea una lega!</p>';
+        }
+
+        function displayMatches() {
+            const recent = league.matches.slice(-10).reverse();
+            let html = '';
+            recent.forEach(m => {
+                const homeWin = m.homeScore > m.awayScore;
+                html += `<div class="match-card">
+                    <span class="${homeWin ? 'winner' : ''}">${m.homeTeam.city} ${m.homeTeam.name}</span>
+                    <strong> ${m.homeScore} - ${m.awayScore} </strong>
+                    <span class="${!homeWin ? 'winner' : ''}">${m.awayTeam.city} ${m.awayTeam.name}</span>
+                </div>`;
+            });
+            document.getElementById('matches').innerHTML = html || '<p>Nessuna partita. Simula una stagione!</p>';
+        }
+
+        // Initial display
+        updateDisplay();
+    </script>
+</body>
+</html>
