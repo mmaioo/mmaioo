@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Basketball League</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏀 Fantasy Basketball League</h1>
+            <p class="subtitle">Gestione della tua lega di fantabasket con AI</p>
+        </header>
+
+        <section class="control-panel">
+            <h2>Pannello di Controllo</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="numTeams">Numero di Squadre:</label>
+                    <input type="number" id="numTeams" value="8" min="2" max="16">
+                </div>
+                <div class="control-group">
+                    <label for="playersPerTeam">Giocatori per Squadra:</label>
+                    <input type="number" id="playersPerTeam" value="12" min="5" max="15">
+                </div>
+                <div class="control-group">
+                    <label for="leagueName">Nome Lega:</label>
+                    <input type="text" id="leagueName" placeholder="Fantasy Basketball League">
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="createLeague" class="btn btn-primary">Crea Nuova Lega</button>
+                <button id="simulateSeason" class="btn btn-success">Simula Stagione Completa</button>
+                <button id="resetLeague" class="btn btn-warning">Reset Statistiche</button>
+            </div>
+        </section>
+
+        <section id="standings" class="section">
+            <h2>Classifica</h2>
+            <div id="standingsTable"></div>
+        </section>
+
+        <section id="teams" class="section">
+            <h2>Squadre</h2>
+            <div id="teamsContainer"></div>
+        </section>
+
+        <section id="matches" class="section">
+            <h2>Partite</h2>
+            <div id="matchesContainer"></div>
+        </section>
+
+        <section id="simulateMatch" class="section">
+            <h2>Simula Partita</h2>
+            <div class="match-simulator">
+                <select id="homeTeamSelect" class="team-select">
+                    <option value="">Seleziona squadra casa</option>
+                </select>
+                <span class="vs">VS</span>
+                <select id="awayTeamSelect" class="team-select">
+                    <option value="">Seleziona squadra trasferta</option>
+                </select>
+                <button id="simulateMatchBtn" class="btn btn-primary">Simula Partita</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
